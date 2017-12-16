@@ -1,0 +1,43 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <!-- derived from https://blog.codeinside.eu/2010/11/24/howto-open-mstest-with-msbuild-2/ -->
+  <PropertyGroup>
+    <OutDir>$(MSBuildStartupDirectory)\OutDir\</OutDir>
+    <SolutionProperties>
+      OutDir=$(OutDir);
+      Platform=Any CPU;
+      Configuration=Release
+    </SolutionProperties>
+    <RunUnitTests>true</RunUnitTests>
+    <ResultsFolder>TestResults</ResultsFolder>
+    <ResultsFile>FindPhotosForMonth.trx</ResultsFile>
+    <UnitTestTransformFile>FindPhotosForMonth\CaptureUnitTestResults.xslt</UnitTestTransformFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <_FilesToTransform Include="\$(ResultsFolder)\$(ResultsFile)"/>
+  </ItemGroup>
+  <ItemGroup>
+    <Solution Include=".\FindPhotosForMonth.sln">
+      <Properties>
+        $(SolutionProperties)
+      </Properties>
+    </Solution>
+  </ItemGroup>
+  <Target Name="Build">
+    <MSBuild Projects="@(Solution)"/>
+    <Message Importance="high" Text="RunUnitTests is $(RunUnitTests)"/>
+    <CallTarget Targets="RunTests" ContinueOnError="false" Condition="'$(RunUnitTests)' == 'true'" />
+  </Target>
+  <Target Name="RunTests" Label="Unit Tests">
+    <Delete Files="$(ResultsFolder)\$(ResultsFile)" />
+    <Exec ContinueOnError="false" Command='"c:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\Common7\IDE\mstest.exe" /nologo /testcontainer:"$(MSBuildStartupDirectory)\OutDir\FindPhotosForMonthTests.dll"  /resultsfile:"$(ResultsFolder)\$(ResultsFile)"' >
+      <Output TaskParameter="ExitCode" PropertyName="ErrorCode"/>
+    </Exec>
+    <Message Importance="high" Text="$(ErrorCode)"/>
+    <CallTarget Targets="Transform" ContinueOnError="false" Condition="'$(ErrorCode)' == '0'" />
+  </Target>
+  <Target Name="Transform">
+    <XslTransformation XslInputPath="$(UnitTestTransformFile)" XmlInputPaths="$(ResultsFolder)\$(ResultsFile)" OutputPaths="$(OutDir)FindPhotosForMonth.html" />
+
+    <Message Importance="high" Text="see $(OutDir)FindPhotosForMonth.html"/>
+  </Target>
+</Project>
